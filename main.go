@@ -154,7 +154,7 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	case "howgay":
 		if len(args) < 1 {
-			_, _ = s.ChannelMessageSend(m.ChannelID, "!howblack <person>")
+			_, _ = s.ChannelMessageSend(m.ChannelID, "!howgay <person>")
 			return
 		}
 
@@ -170,7 +170,7 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 			Title:       fmt.Sprintf("%v", strings.Join(args, " ")),
-			Description: fmt.Sprintf("%v", kkksaysoutcome[rand.Intn(len(kkksaysoutcome))]),
+			Description: fmt.Sprintf("%v", askoutcome[rand.Intn(len(askoutcome))]),
 			Color:       0x00FFFF, // cyan
 		})
 	case "fight":
