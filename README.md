@@ -1,2 +1,2 @@
-# KlanLeader
-KlanLeader Discord Bot written in go lang
+# Discord bot
+ Discord Bot is written in go lang
