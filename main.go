@@ -61,6 +61,18 @@ var FightOutcomes = [...]string{
 	"A private hotel room because you both got horny",
 }
 
+// snipes is a list of the past 50 deleted messages in a channel.
+var snipes = map[string][]snipedMessage{}
+
+type snipedMessage struct {
+	Content    string
+	Author     *discordgo.User
+	ChannelID  string
+	ID         string
+	Timestamp  time.Time
+	Attachment *discordgo.MessageAttachment
+}
+
 const (
 	categoryFun     = "Random/Fun"
 	categoryStaff   = "Staff"
@@ -80,6 +92,7 @@ var commands = []commandEntry{
 	{"howgay", categoryFun, "Sees how gay a user is"},
 	{"sayembed", categoryFun, "embeds what ever message it's given"},
 	{"ask", categoryFun, "gives you an answer to any question you ask"},
+	{"snipe", categoryFun, "view deleted messages"},
 
 	{"purge", categoryUtility, "Deletes the previous # of messages you want limit 100"},
 	{"addrole", categoryUtility, "gives a user a set role"},
@@ -99,6 +112,7 @@ func main() {
 	botID = u.ID
 
 	dg.AddHandler(messageHandler)
+	dg.AddHandler(onMessageDelete)
 
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentsGuildPresences
 
@@ -491,6 +505,69 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
+	case "snipe":		
+		var num int
+		if len(args) > 0 {
+			if n, err := strconv.Atoi(args[0]); err == nil {
+				if n < 0 || n+1 > len(snipes[m.ChannelID]) {
+					num = 0
+				} else {
+					num = n - 1
+				}
+			}
+		}
+
+		msg := snipes[m.ChannelID][num]
+		var image *discordgo.MessageEmbedImage
+		if msg.Attachment != nil {
+			image = &discordgo.MessageEmbedImage{
+				URL:      msg.Attachment.URL,
+				ProxyURL: msg.Attachment.ProxyURL,
+				Width:    msg.Attachment.Width,
+				Height:   msg.Attachment.Height,
+			}
+		}
+
+		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+			Description: msg.Content,
+			Color:       blueHex,
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: fmt.Sprintf("%v/%v | %v", num + 1, len(snipes), msg.Timestamp.Format("January-02-2006 3:04:05 PM MST")),
+			},
+			Author: &discordgo.MessageEmbedAuthor{
+				Name:    msg.Author.String(),
+				IconURL: msg.Author.AvatarURL(""),
+			},
+			Image: image,
+		})
+	}
+}
+
+func onMessageDelete(_ *discordgo.Session, msg *discordgo.MessageDelete) {
+	b := msg.BeforeDelete
+	if b == nil {
+		return
+	}
+	var attachment *discordgo.MessageAttachment
+	if len(b.Attachments) > 0 {
+		attachment = b.Attachments[0]
+	}
+	var list []snipedMessage
+	list = append(list, snipedMessage{
+		Content:    b.Content,
+		Author:     b.Author,
+		ChannelID:  b.ChannelID,
+		ID:         b.ID,
+		Timestamp:  b.Timestamp,
+		Attachment: attachment,
+	})
+	for _, value := range snipes[b.ChannelID] {
+		list = append(list, value)
+	}
+	if len(list) > 50 {
+		snipes[b.ChannelID] = list[:50]
+	} else {
+		snipes[b.ChannelID] = list
 	}
 }
 
