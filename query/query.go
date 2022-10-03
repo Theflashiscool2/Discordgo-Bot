@@ -6,11 +6,6 @@ import (
 	"strings"
 )
 
-type Request struct {
-	Ip   string
-	Port uint16
-}
-
 type Response struct {
 	Serversoftware string
 	Plugins        string
@@ -27,8 +22,8 @@ type Response struct {
 	HostPort       string
 }
 
-func Query(request Request) (Response, error) {
-	data, err := query.Do(request.Ip + ":" + strconv.Itoa(int(request.Port)))
+func Query(ip string, port uint16) (Response, error) {
+	data, err := query.Do(ip + ":" + strconv.Itoa(int(port)))
 	return Response{
 		Players:        strings.Split(data["players"], ", "),
 		Serversoftware: data["server_engine"],

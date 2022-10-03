@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/sandertv/go-raknet"
 )
 
 const (
@@ -102,6 +103,8 @@ var commands = []commandEntry{
 	{"addrole", categoryUtility, "gives a user a set role"},
 	{"delrole", categoryUtility, "removes a role from a user"},
 	{"createrole", categoryUtility, "creates a role of your choice"},
+	{"query", categoryUtility, "View information on a Minecraft server"},
+	{"ping", categoryUtility, "View minimal information on a Minecraft server"},
 }
 
 func main() {
@@ -563,7 +566,7 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			port = uint16(p)
 		}
-		response, err := query.Query(query.Request{Ip: ip, Port: port})
+		response, err := query.Query(ip, port)
 		if err != nil {
 			_, _ = s.ChannelMessageSend(m.ChannelID, "Failed to query the given server.")
 			return
@@ -605,6 +608,41 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				Description("```ini\n"+strings.Join(response.Players[40:150], ", ")+"```").
 				Build())
 		}
+	case "ping":
+		if len(args) < 1 {
+			_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"ping <ip> [port]")
+			return
+		}
+		port := "19132"
+		if len(args) > 1 {
+			if p, err := strconv.Atoi(args[1]); err == nil {
+				if p >= 0 && p <= 65535 {
+					port = args[1]
+				}
+			}
+		}
+
+		start := time.Now()
+		b, err := raknet.Ping(ip + ":" + port)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Error: " + err.Error())
+			return
+		}
+		a := strings.Split(string(b), ";")
+		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+			Title: "Ping Response for " + args[0] + "!",
+			Footer: &discordgo.MessageEmbedFooter{
+				Text:    fmt.Sprintf("Ran by %v | Time: %vs", m.Author.String(), time.Now().Sub(start).Seconds()),
+				IconURL: m.Author.AvatarURL(""),
+			},
+			Fields: []*discordgo.MessageEmbedField{
+				{Name: "🖇 Software", Value: a[7]},
+				{Name: "💾 Version", Value: a[3] + " (Protocol: " + a[2] + ")"},
+				{Name: "🎉 MOTD", Value: a[1],
+				{Name: "👥 Players", Value: a[4] + "/" + a[5]},
+			},
+			Color: greenHex,
+		})
 	}
 }
 
