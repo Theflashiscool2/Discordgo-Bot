@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golang.org/x/image/colornames"
 	"main/embed"
+	"main/query"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -535,6 +536,74 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Set(image).
 			Build(),
 		)
+	case "query":
+		var ip string
+		var port uint16
+		if len(args) < 1 {
+			_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"query <ip> [port]")
+			return
+		}
+		if strings.Contains(args[0], ":") {
+			spl := strings.Split(args[0], ":")
+			ip = spl[0]
+			p, err := strconv.ParseUint(spl[1], 10, 16)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Please provide a valid port to query.")
+				return
+			}
+			port = uint16(p)
+		}
+		if len(args) >= 2 {
+			ip = args[0]
+			p, err := strconv.ParseUint(args[1], 10, 16)
+			if err != nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Please provide a valid port to query.")
+				return
+			}
+			port = uint16(p)
+		}
+		response, err := query.Query(query.Request{Ip: ip, Port: port})
+		if err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Failed to query the given server.")
+			return
+		}
+		if response.Serversoftware == "" {
+			response.Serversoftware = "Hidden by Server."
+		}
+		em := embed.NewBuilder().
+			Title("Query Information on " + ip).
+			WithField().
+			Name(":name_badge: MOTD: ").
+			Value(response.HostName).
+			WithField().
+			Name(":desktop: Software: ").
+			Value(response.Serversoftware).
+			WithField().
+			Name(":video_game: Game: ").
+			Value(response.GameName + ", " + response.GameMode).
+			WithField().
+			Name(":compass: Version: ").
+			Value(response.Version).
+			WithField().
+			Name(":newspaper: Whitelist: ").
+			Value(response.Whitelist)
+		if len(response.Players) > 100 {
+			em = em.WithField().
+				Name(":busts_in_silhouette: Players**(" + strconv.Itoa(len(response.Players)) + "/" + response.MaxPlayers + ")**:").
+				Value("```ini\n" + strings.Join(response.Players[:40], ", ") + "```")
+		} else {
+			em = em.WithField().
+				Name(":busts_in_silhouette: Players**(" + strconv.Itoa(len(response.Players)) + "/" + response.MaxPlayers + ")**:").
+				Value("```ini\n" + strings.Join(response.Players, ", ") + "```")
+		}
+		_, err = s.ChannelMessageSendEmbed(m.ChannelID, em.Build())
+		// Send extra players that couldn't fit into the original embed.
+		if len(response.Players) > 100 {
+			_, err = s.ChannelMessageSendEmbed(m.ChannelID, em.
+				Title("Extra Players").
+				Description("```ini\n"+strings.Join(response.Players[40:150], ", ")+"```").
+				Build())
+		}
 	}
 }
 
