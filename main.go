@@ -98,6 +98,7 @@ var commands = []commandEntry{
 	{"snipe", categoryFun, "view deleted messages"},
 
 	{"purge", categoryUtility, "Deletes the previous # of messages you want limit 100"},
+	{"query", categoryUtility, "gives info on Minecraft server you put in"},
 	{"addrole", categoryUtility, "gives a user a set role"},
 	{"delrole", categoryUtility, "removes a role from a user"},
 	{"createrole", categoryUtility, "creates a role of your choice"},
