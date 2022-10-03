@@ -14,15 +14,6 @@ func (b *Builder) Build() *discordgo.MessageEmbed {
 	return b.em
 }
 
-func (b *Builder) Field(name, value string, inline bool) *Builder {
-	b.em.Fields = append(b.em.Fields, &discordgo.MessageEmbedField{
-		Name:   name,
-		Value:  value,
-		Inline: inline,
-	})
-	return b
-}
-
 func (b *Builder) AddFields(fs ...*discordgo.MessageEmbedField) *Builder {
 	for _, f := range fs {
 		b.em.Fields = append(b.em.Fields, f)
