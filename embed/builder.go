@@ -113,6 +113,11 @@ func (i *ImageBuilder) Height(height int) *ImageBuilder {
 	return i
 }
 
+func (i *ImageBuilder) Set(img *discordgo.MessageEmbedImage) *ImageBuilder {
+	i.em.Image = img
+	return i
+}
+
 func (b *Builder) Image() *ImageBuilder {
 	b.em.Image = &discordgo.MessageEmbedImage{}
 	return &ImageBuilder{*b}
