@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/image/colornames"
 	"main/embed"
 	"main/query"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/image/colornames"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -64,6 +65,11 @@ var FightOutcomes = [...]string{
 	"A private hotel room because you both got horny",
 }
 
+var EightballAnswers = [...]string{
+	"yes",
+	"no",
+}
+
 // snipes is a list of the past 50 deleted messages in a channel.
 var snipes = map[string][]snipedMessage{}
 
@@ -96,6 +102,7 @@ var commands = []commandEntry{
 	{"sayembed", categoryFun, "embeds what ever message it's given"},
 	{"ask", categoryFun, "gives you an answer to any question you ask"},
 	{"snipe", categoryFun, "view deleted messages"},
+	{"eightball", categoryFun, "knows answers to your questions and will be willing to share it with you"},
 
 	{"purge", categoryUtility, "Deletes the previous # of messages you want limit 100"},
 	{"query", categoryUtility, "gives info on Minecraft server you put in"},
@@ -605,7 +612,24 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				Description("```ini\n"+strings.Join(response.Players[40:150], ", ")+"```").
 				Build())
 		}
+	case "eightball":
+		if len(args) < 1 {
+			_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"eightball <message>")
+			return
+		}
+
+		answer := EightballAnswers[rand.Intn(len(EightballAnswers))]
+		_, err := s.ChannelMessageSend(m.ChannelID, answer)
+
+		if err != nil {
+			_, _ = s.ChannelMessageSend(
+				m.ChannelID,
+				fmt.Sprintf("Error don't know the answer: %s", err.Error()),
+			)
+			return
+		}
 	}
+
 }
 
 func onMessageDelete(_ *discordgo.Session, msg *discordgo.MessageDelete) {
