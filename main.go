@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/jviguy/speedycmds"
+	"github.com/jviguy/speedycmds/command"
 	"golang.org/x/image/colornames"
 	"main/embed"
 	"main/query"
 	"math/rand"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -84,13 +89,6 @@ const (
 
 // commands is a map of command names and descriptions, this is used to generate the help command.
 var commands = []commandEntry{
-	{"ban", categoryStaff, "Ban someone unfit for the server"},
-	{"unban", categoryStaff, "Allows users back into the server"},
-	{"mute", categoryStaff, "silences a user"},
-	{"unmute", categoryStaff, "lets the user talk"},
-
-	{"say", categoryFun, "Bot repeats whatever you say"},
-	{"dm", categoryFun, "The Bot Dms someone anything you want"},
 	{"fight", categoryFun, "Fights anyone you want. It doesnt have to be a person example: andrew tate"},
 	{"howgay", categoryFun, "Sees how gay a user is"},
 	{"sayembed", categoryFun, "embeds what ever message it's given"},
@@ -117,7 +115,8 @@ func main() {
 
 	dg.AddHandler(messageHandler)
 	dg.AddHandler(onMessageDelete)
-
+	handler := speedycmds.NewBasicHandler(dg, true, prefix, command.NewCommandMap())
+	commands.RegisterAll(handler.Commands())
 	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentsGuildPresences
 
 	if err = dg.Open(); err != nil {
@@ -125,8 +124,12 @@ func main() {
 	}
 	_ = dg.UpdateGameStatus(1, "Hacktoberfest")
 
-	fmt.Println("Bot Online")
-	select {}
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+	// Cleanly close down the Discord session.
+	dg.Close()
 }
 
 func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
