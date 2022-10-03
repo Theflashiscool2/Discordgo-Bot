@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"main/embed"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-// this is stuff that goes in your server replace it with your own stuff
+	// this is stuff that goes in your server replace it with your own stuff
 	// this is the logs channed id for the bot to send logs of command used in my case it would be this but replace it  for your own channel id
 	logsID = "1008783295061962834"
 	// this is where you place the bots token
@@ -42,7 +43,7 @@ var askOutcomes = [...]string{
 	"TheFlash wont be happy with that",
 	"Dont even think about it",
 	//all the yes outcomes
-	"oh yea",,
+	"oh yea",
 	"i Think Flash would like that",
 	"senpai says Pls UWU",
 	"yes please!",
@@ -168,21 +169,19 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_, _ = s.ChannelMessageSend(m.ChannelID, "!ask<message>")
 			return
 		}
-		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("%v", strings.Join(args, " ")),
-			Description: fmt.Sprintf("%v", kkksaysoutcome[rand.Intn(len(kkksaysoutcome))]),
-			Color:       0x00FFFF, // cyan
-		})
+		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+			fmt.Sprintf("%v", strings.Join(args, " ")),
+			fmt.Sprintf("%v", askOutcomes[rand.Intn(len(askOutcomes))]),
+			embed.TypeInfo).Build())
 	case "fight":
 		if len(args) < 1 {
 			_, _ = s.ChannelMessageSend(m.ChannelID, "!fight <opponent>")
 			return
 		}
-		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-			Title:       "Boxing Ring",
-			Description: fmt.Sprintf("WOW! Your fight vs %v resulted in %v", strings.Join(args[0:], " "), FightOutcomes[rand.Intn(len(FightOutcomes))]),
-			Color:       0x00FFFF, // cyan
-		})
+		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+			"Boxing Ring",
+			fmt.Sprintf("WOW! Your fight vs %v resulted in %v", strings.Join(args[0:], " "), FightOutcomes[rand.Intn(len(FightOutcomes))]),
+			embed.TypeInfo).Build())
 
 	case "help":
 		sb := &strings.Builder{}
@@ -195,17 +194,13 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			lastCategory = c.Category()
 			sb.WriteString(fmt.Sprintf(" - `%s`: %s\n", c.Name(), c.Description()))
 		}
-		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-			Description: sb.String(),
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: "This bot is made by Theflashiscool2 with help from prim",
-			},
-		})
+		em := embed.NewSimpleEmbed("", sb.String(), embed.TypeInfo).Footer().Text("This bot is made by Theflashiscool2 with help from prim")
+		_, _ = s.ChannelMessageSendEmbed(m.ChannelID, em.Build())
 	case "ban":
 		if hasPerm(s, m.Author, m.ChannelID, discordgo.PermissionBanMembers) {
-			if len(args) < 2 { // if the user hasnt specified atleast 2 args (in this case a target and a reason)
+			if len(args) < 2 { // if the user hasn't specified atleast 2 args (in this case a target and a reason)
 				_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"ban <user> <reason>")
-				return // return means stop, dont run the code below this
+				return // return means stop, don't run the code below this
 			}
 			user := findUser(s, m.Mentions, args[0])
 			if user == nil {
@@ -217,24 +212,24 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error banning user: %s", err.Error()))
 				return
 			}
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Member Banned",
-				Description: fmt.Sprintf("%v has been banned for %v!", user.Mention(), strings.Join(args[1:], " ")),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Member Banned",
-				Description: fmt.Sprintf("User %v has banned  %v for %v!", m.Author, user.Mention(), strings.Join(args[1:], " ")),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+				"Member Banned",
+				fmt.Sprintf("%v has been banned for %v!", user.Mention(), strings.Join(args[1:], " ")),
+				embed.TypeSuccess,
+			).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Member Banned",
+				fmt.Sprintf("User %v has banned  %v for %v!", m.Author, user.Mention(), strings.Join(args[1:], " ")),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
 	case "createrole":
 		if hasPerm(s, m.Author, m.ChannelID, discordgo.PermissionAdministrator) {
-			if len(args) < 2 { // if the user hasnt specified atleast 2 args (in this case a target and a reason)
+			if len(args) < 2 { // if the user hasn't specified atleast 2 args (in this case a target and a reason)
 				_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"createrole <role> <color> red blue green black")
-				return // return means stop, dont run the code below this
+				return // return means stop, don't run the code below this
 			}
 
 			color, ok := stringToHexColors[args[1]]
@@ -250,24 +245,22 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 
 			s.GuildRoleEdit(m.GuildID, role.ID, args[0], color, role.Hoist, role.Permissions, role.Mentionable)
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Role Created!",
-				Description: fmt.Sprintf("The Role %v has been Created!", args[0]),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Role Creater",
-				Description: fmt.Sprintf("User %v has created the role %v!", m.Author, args[0]),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed("Role Created!",
+				fmt.Sprintf("The Role %v has been Created!", args[0]),
+				embed.TypeSuccess).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Role Creater",
+				fmt.Sprintf("User %v has created the role %v!", m.Author, args[0]),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
 	case "addrole":
 		if hasPerm(s, m.Author, m.ChannelID, discordgo.PermissionAdministrator) {
-			if len(args) < 2 { // if the user hasnt specified atleast 2 args (in this case a target and a reason)
+			if len(args) < 2 { // if the user hasn't specified atleast 2 args (in this case a target and a reason)
 				_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"addrole <user> <role>")
-				return // return means stop, dont run the code below this
+				return // return means stop, don't run the code below this
 			}
 			user := findUser(s, m.Mentions, args[0])
 			if user == nil {
@@ -284,25 +277,25 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error giving role to user %s", err.Error()))
 				return
 			}
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Role Given!",
-				Description: fmt.Sprintf("%v has been succesfully given the role %v!", user.Mention(), args[1]),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Role(+)",
-				Description: fmt.Sprintf("User %v has given the role %v to %v!", m.Author, args[0], user.Mention()),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+				"Role Given!",
+				fmt.Sprintf("%v has been succesfully given the role %v!", user.Mention(), args[1]),
+				embed.TypeSuccess,
+			).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Role(+)",
+				fmt.Sprintf("User %v has given the role %v to %v!", m.Author, args[0], user.Mention()),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
 
 	case "delrole":
 		if hasPerm(s, m.Author, m.ChannelID, discordgo.PermissionAll) {
-			if len(args) < 2 { // if the user hasnt specified atleast 2 args (in this case a target and a reason)
+			if len(args) < 2 { // if the user hasn't specified atleast 2 args (in this case a target and a reason)
 				_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"delrole <user> <role>")
-				return // return means stop, dont run the code below this
+				return // return means stop, don't run the code below this
 			}
 			user := findUser(s, m.Mentions, args[0])
 			if user == nil {
@@ -319,25 +312,25 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error removing role from user %s", err.Error()))
 				return
 			}
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Role Given!",
-				Description: fmt.Sprintf("%v has been succesfully removed of the %v role!", user.Mention(), args[1]),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Role (-)",
-				Description: fmt.Sprintf("User %v has removed the role  %v from %v!", m.Author, args[0], user.Mention()),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+				"Role Given!",
+				fmt.Sprintf("User %v has removed the role  %v from %v!", m.Author, args[0], user.Mention()),
+				embed.TypeSuccess,
+			).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Role (-)",
+				fmt.Sprintf("User %v has removed the role  %v from %v!", m.Author, args[0], user.Mention()),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
 
 	case "mute":
 		if hasPerm(s, m.Author, m.ChannelID, discordgo.PermissionBanMembers) {
-			if len(args) < 2 { // if the user hasnt specified atleast 2 args (in this case a target and a reason)
+			if len(args) < 2 { // if the user hasn't specified atleast 2 args (in this case a target and a reason)
 				_, _ = s.ChannelMessageSend(m.ChannelID, prefix+"mute <user> <reason>")
-				return // return means stop, dont run the code below this
+				return // return means stop, don't run the code below this
 			}
 			user := findUser(s, m.Mentions, args[0])
 			if user == nil {
@@ -349,16 +342,16 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error muting user: %s", err.Error()))
 				return
 			}
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Member Muted",
-				Description: fmt.Sprintf("%v has been muted for %v!", user.Mention(), strings.Join(args[1:], " ")),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Member Banned",
-				Description: fmt.Sprintf("User %v has muted %v for %v!", m.Author, user.Mention(), strings.Join(args[1:], " ")),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+				"Member Muted",
+				fmt.Sprintf("%v has been muted for %v!", user.Mention(), strings.Join(args[1:], " ")),
+				embed.TypeSuccess,
+			).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Member Banned",
+				fmt.Sprintf("User %v has muted %v for %v!", m.Author, user.Mention(), strings.Join(args[1:], " ")),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
@@ -374,16 +367,17 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error unmuting user: %s", err.Error()))
 				return
 			}
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Member Unmuted",
-				Description: fmt.Sprintf("%v has been unmuted!", user.Mention()),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Member Banned",
-				Description: fmt.Sprintf("User %v has unmuted %v!", m.Author, user.Mention()),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+				"Member Unmuted",
+				fmt.Sprintf("%v has been unmuted!", user.Mention()),
+				embed.TypeSuccess,
+			).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Member Banned",
+				fmt.Sprintf("User %v has unmuted %v!", m.Author, user.Mention()),
+				embed.TypeSuccess,
+			).Build())
+
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
@@ -403,16 +397,16 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error unbanning user: %s", err.Error()))
 				return
 			}
-			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-				Title:       "Member UnBanned",
-				Description: fmt.Sprintf("%v has been allwed back into the server", user.Mention()),
-				Color:       0x00ff00, // green
-			})
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Member unbanned",
-				Description: fmt.Sprintf("User %v has unbanned  %v!", m.Author, user.Mention()),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed.NewSimpleEmbed(
+				"Member UnBanned",
+				fmt.Sprintf("%v has been allwed back into the server", user.Mention()),
+				embed.TypeSuccess,
+			).Build())
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Member unbanned",
+				fmt.Sprintf("User %v has unbanned  %v!", m.Author, user.Mention()),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
@@ -435,16 +429,17 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_, _ = s.ChannelMessageSend(m.ChannelID, "Could not Open Dms with this user")
 			return
 		}
+
 		_, err = s.ChannelMessageSend(private.ID, strings.Join(args[1:], " "))
 		if err != nil {
 			_, _ = s.ChannelMessageSend(m.ChannelID, "could not dm user.")
 			return
 		}
-		_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-			Title:       "Member DMED",
-			Description: fmt.Sprintf("User %v has successfully dmed  %v!", m.Author, user.Mention()),
-			Color:       0x00ff00, // green
-		})
+		_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+			"Member DMED",
+			fmt.Sprintf("User %v has successfully dmed  %v!", m.Author, user.Mention()),
+			embed.TypeSuccess,
+		).Build())
 		_, _ = s.ChannelMessageSend(m.ChannelID, "The user has succesfully ben DMED")
 	case "purge":
 		if hasPerm(s, m.Author, m.ChannelID, discordgo.PermissionBanMembers) {
@@ -483,11 +478,11 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 				})
 			}
-			_, _ = s.ChannelMessageSendEmbed(logsID, &discordgo.MessageEmbed{
-				Title:       "Purge Successful!",
-				Description: fmt.Sprintf("User %v has successfully purged %v messages! ", m.Author, num),
-				Color:       0x00ff00, // green
-			})
+			_, _ = s.ChannelMessageSendEmbed(logsID, embed.NewSimpleEmbed(
+				"Purge Successful!",
+				fmt.Sprintf("User %v has successfully purged %v messages! ", m.Author, num),
+				embed.TypeSuccess,
+			).Build())
 		} else {
 			_, _ = s.ChannelMessageSend(m.ChannelID, missingPerms)
 		}
