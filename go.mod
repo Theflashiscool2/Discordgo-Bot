@@ -2,7 +2,10 @@ module main
 
 go 1.18
 
-require github.com/bwmarrin/discordgo v0.25.1-0.20220714214021-0feaae8f1b39
+require (
+	github.com/bwmarrin/discordgo v0.25.1-0.20220714214021-0feaae8f1b39
+	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69
+)
 
 require (
 	github.com/gorilla/websocket v1.4.2 // indirect
