@@ -95,6 +95,7 @@ var commands = []commandEntry{
 	{"sayembed", categoryFun, "embeds what ever message it's given"},
 	{"ask", categoryFun, "gives you an answer to any question you ask"},
 	{"snipe", categoryFun, "view deleted messages"},
+	{"sex", categoryFun, "special fun with another user"}
 
 	{"purge", categoryUtility, "Deletes the previous # of messages you want limit 100"},
 	{"query", categoryUtility, "gives info on Minecraft server you put in"},
@@ -646,6 +647,70 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			},
 			Color: greenHex,
 		})
+	case "sex":
+		if len(args) < 1 {
+			_, _ = s.ChannelMessageSend(m.ChannelID, prefix + "sex <user>")
+			return
+		}
+		var user *discordgo.User
+		if len(m.Mentions) > 0 {
+			user = m.Mentions[0]
+		} else {
+			var err error
+			user, err = s.User(args[0])
+			if err != nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "That user does not exist!")
+				return
+			}
+		}
+	
+		av1, err := s.UserAvatar(user.ID)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting avatar: " + err.Error())
+			return
+		}
+		av2, err := s.UserAvatar(m.Author.ID)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting avatar: " + err.Error())
+			return
+		}
+	
+		f, err := os.Open("sex.png")
+		if err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Error opening template: " + err.Error())
+			return
+		}
+		p, err := png.Decode(f)
+		if err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Error decoding image: " + err.Error())
+			return
+		}
+	
+		s := p.Bounds().Size()
+		img := image.NewRGBA(image.Rect(0, 0, s.X, s.Y))
+		draw.Draw(img, p.Bounds(), p, image.Point{}, draw.Src)                      // draw the main template
+		draw.Draw(img, image.Rect(135, 17, 324, 141), av1, image.Point{}, draw.Src) // draw the first avatar
+		draw.Draw(img, image.Rect(93, 283, 220, 396), av2, image.Point{}, draw.Src) // draw the second avatar
+		if out, err := os.Create("./output.png"); err != nil {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Error creating image: " + err.Error())
+			return
+		} else {
+			if err := png.Encode(out, img); err != nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Error encoding image: " + err.Error())
+				return
+			}
+			if f, err = os.Open("output.png"); err != nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Error opening output image: " + err.Error())
+				return
+			}
+			_, _ = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+				Content: m.Author.Mention() + " has sent a sex request to " + user.Mention() + "!",
+				File: &discordgo.File{
+					Name:   "sex.png",
+					Reader: f,
+				},
+			})
+		}
 	}
 }
 
