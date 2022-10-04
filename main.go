@@ -95,7 +95,7 @@ var commands = []commandEntry{
 	{"sayembed", categoryFun, "embeds what ever message it's given"},
 	{"ask", categoryFun, "gives you an answer to any question you ask"},
 	{"snipe", categoryFun, "view deleted messages"},
-	{"sex", categoryFun, "special fun with another user"}
+	{"sex", categoryFun, "special fun with another user"},
 
 	{"purge", categoryUtility, "Deletes the previous # of messages you want limit 100"},
 	{"query", categoryUtility, "gives info on Minecraft server you put in"},
