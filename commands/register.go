@@ -8,5 +8,6 @@ func RegisterAll(m *command.Map) {
 		Unban{},
 		Mute{},
 		Unmute{},
+		Kick{},
 	}, true)
 }
